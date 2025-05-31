@@ -61,7 +61,7 @@ export class AuthController {
     status: 409,
     description: 'User with this email or username already exists',
   })
-  register(@Body() createUserDto: CreateUserDto) {
+  createStudent(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto);
   }
 

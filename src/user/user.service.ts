@@ -15,7 +15,10 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(
+    createUserDto: CreateUserDto,
+    createInstructor: boolean = false,
+  ) {
     await this.checkIfUserExists(createUserDto.email, createUserDto.username);
 
     const password = await bcrypt.hash(createUserDto.password, 10);
@@ -24,6 +27,8 @@ export class UserService {
       data: {
         ...createUserDto,
         password,
+        isVerified: createInstructor,
+        role: createInstructor ? Role.INSTRUCTOR : Role.STUDENT,
       },
     });
   }
@@ -40,12 +45,14 @@ export class UserService {
     return user;
   }
 
-  async findAll(paginationDto: PaginationDto) {
+  async findAll(paginationDto: PaginationDto, role?: Role) {
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
+    const where = role ? { role } : {};
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
+        where,
         skip,
         take: limit,
       }),

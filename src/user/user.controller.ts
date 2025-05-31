@@ -8,6 +8,7 @@ import {
   UseGuards,
   Req,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -22,6 +23,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @ApiBearerAuth('access-token')
 @ApiCookieAuth('access-token')
@@ -38,8 +40,8 @@ export class UserController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @RolesDecorator(Role.ADMIN)
   @UseGuards(RolesGuard)
-  findAll() {
-    return this.userService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.userService.findAll(paginationDto);
   }
 
   @Get(':id')

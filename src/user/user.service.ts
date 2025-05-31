@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,7 +8,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { Prisma } from 'generated/prisma';
+import { Prisma, Role } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
@@ -73,6 +74,22 @@ export class UserService {
 
   async remove(id: number) {
     await this.findBy({ id });
+
+    return await this.prisma.user.delete({
+      where: { id },
+    });
+  }
+
+  async deleteUser(id: number, loggedInUserId: number) {
+    if (id === loggedInUserId) {
+      throw new ConflictException('You cannot delete your own account');
+    }
+
+    const targetUser = await this.findBy({ id });
+
+    if (targetUser!.role === Role.ADMIN) {
+      throw new ForbiddenException('You cannot delete an admin user');
+    }
 
     return await this.prisma.user.delete({
       where: { id },

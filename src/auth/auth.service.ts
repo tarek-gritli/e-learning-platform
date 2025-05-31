@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { LoginDto } from './dto/login.dto';
-import { EmailVerificationDto } from './dto/email-verification.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { EmailService } from 'src/mail/mail.service';
@@ -28,14 +27,14 @@ export class AuthService {
   ) {}
 
   async validateUser(username: string, password: string) {
-    const user = await this.userService.findBy({ username });
+    const user = await this.userService.findBy({ username }, false);
     if (!user) {
       return null;
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new ForbiddenException('Invalid credentials');
+      return null;
     }
 
     if (!user.isVerified) throw new ForbiddenException('Email is not verified');
@@ -85,12 +84,11 @@ export class AuthService {
   }
 
   logout(res: Response) {
-    this.clearCookies(res);
+    this.clearCookies(res, 'access_token');
     return { message: 'Logged out successfully' };
   }
 
-  async verifyEmail(emailVerificationDto: EmailVerificationDto) {
-    const { token } = emailVerificationDto;
+  async verifyEmail(token: string) {
     const user = await this.userService.findByVerificationToken(token);
     if (!user) {
       throw new ForbiddenException('Invalid or expired verification token');
@@ -209,7 +207,7 @@ export class AuthService {
     });
   }
 
-  clearCookies(res: Response) {
-    res.clearCookie('access_token', { path: '/' });
+  clearCookies(res: Response, cookieName: string) {
+    res.clearCookie(cookieName, { path: '/' });
   }
 }

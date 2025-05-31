@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -13,7 +14,6 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { Request, Response } from 'express';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { EmailVerificationDto } from './dto/email-verification.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import {
@@ -21,12 +21,14 @@ import {
   ApiBody,
   ApiCookieAuth,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
 import { ResendEmailVerificationDto } from './dto/resend-email.dto';
 import { RequestWithUser } from 'src/common/types/auth.types';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
+@ApiResponse({ status: 500, description: 'Internal Server Error' })
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -40,7 +42,7 @@ export class AuthController {
     description: 'User successfully logged in and received access token',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Invalid credentials' })
+  @ApiResponse({ status: 403, description: 'Email is not verified' })
   @UseGuards(LocalAuthGuard)
   login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     return this.authService.login(loginDto, res);
@@ -63,10 +65,15 @@ export class AuthController {
     return this.authService.register(createUserDto);
   }
 
-  @Post('verify-email')
+  @Get('verify-email')
   @HttpCode(200)
   @ApiOperation({ summary: 'Verify email' })
-  @ApiBody({ type: EmailVerificationDto })
+  @ApiQuery({
+    name: 'token',
+    required: true,
+    description: 'Verification token received via email',
+    type: String,
+  })
   @ApiResponse({
     status: 200,
     description: 'Email successfully verified',
@@ -75,8 +82,8 @@ export class AuthController {
     status: 403,
     description: 'Invalid or expired verification token',
   })
-  async verifyEmail(@Body() emailVerificationDto: EmailVerificationDto) {
-    return await this.authService.verifyEmail(emailVerificationDto);
+  async verifyEmail(@Query('token') token: string) {
+    return await this.authService.verifyEmail(token);
   }
 
   @Post('resend-verification')
@@ -129,7 +136,7 @@ export class AuthController {
     return this.authService.resetPassword(resetPasswordDto);
   }
 
-  @Get('profile')
+  @Get('me')
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({
     status: 200,

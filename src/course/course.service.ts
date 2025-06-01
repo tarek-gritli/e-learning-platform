@@ -61,7 +61,7 @@ export class CourseService {
     userId: number,
     userRole: Role,
   ) {
-    const course = await this.findBy(courseId);
+    const course = await this.findById(courseId);
     if (!course) {
       throw new NotFoundException('Course not found');
     }
@@ -106,7 +106,7 @@ export class CourseService {
     };
   }
 
-  async findBy(courseId: number) {
+  async findById(courseId: number) {
     return await this.prisma.course.findUnique({
       where: { id: courseId },
       include: {
@@ -125,7 +125,7 @@ export class CourseService {
     updateCourseDto: UpdateCourseDto,
     instructorId: number,
   ) {
-    const existingCourse = await this.findBy(courseId);
+    const existingCourse = await this.findById(courseId);
 
     if (!existingCourse) {
       throw new NotFoundException('Course not found');
@@ -144,7 +144,7 @@ export class CourseService {
   }
 
   async delete(courseId: number, instructorId: number) {
-    const existingCourse = await this.findBy(courseId);
+    const existingCourse = await this.findById(courseId);
 
     if (!existingCourse) {
       throw new NotFoundException('Course not found');

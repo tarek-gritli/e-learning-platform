@@ -45,7 +45,7 @@ export class UserController {
   @ApiResponse({
     status: 409,
     description: 'User with this email already exists',
-  })
+  })  
   @RolesDecorator(Role.ADMIN)
   @UseGuards(RolesGuard)
   createInstructor(@Body() createInstructorDto: CreateUserDto) {

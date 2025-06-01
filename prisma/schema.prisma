@@ -25,6 +25,7 @@ enum EnrollmentStatus {
   COMPLETED
   DROPPED
   KICKED
+  PENDING
 }
 
 enum MaterialType {

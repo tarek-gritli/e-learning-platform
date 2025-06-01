@@ -6,13 +6,15 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CourseService } from 'src/course/course.service';
-import { EnrollmentStatus } from 'generated/prisma';
+import { EnrollmentStatus, EventType } from 'generated/prisma';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class InstructorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly courseService: CourseService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async inviteStudentToCourse(
@@ -57,7 +59,7 @@ export class InstructorService {
     }
 
     // Create pending enrollment
-    await this.prisma.enrollment.create({
+    const enrollment = await this.prisma.enrollment.create({
       data: {
         studentId,
         courseId,
@@ -65,7 +67,17 @@ export class InstructorService {
       },
     });
 
-    return `Invitation sent: Student ${studentId} invited to Course ${courseId}`;
+    this.eventEmitter.emit(EventType.INSTRUCTOR_INVITED_STUDENT, {
+      type: EventType.INSTRUCTOR_INVITED_STUDENT,
+      userId: instructorId,
+      payload: {
+        enrollment,
+        course,
+        student,
+      },
+    });
+
+    return enrollment;
   }
 
   async kickStudentFromCourse(
@@ -99,7 +111,7 @@ export class InstructorService {
     }
 
     // Delete the enrollment
-    await this.prisma.enrollment.update({
+    const newEnrollment = await this.prisma.enrollment.update({
       where: {
         studentId_courseId: {
           studentId,
@@ -111,7 +123,17 @@ export class InstructorService {
       },
     });
 
-    return `Student ${studentId} has been kicked from course ${courseId}`;
+    this.eventEmitter.emit(EventType.INSTRUCTOR_KICKED_STUDENT, {
+      type: EventType.INSTRUCTOR_KICKED_STUDENT,
+      userId: instructorId,
+      payload: {
+        course,
+        oldEnrollment: enrollment,
+        newEnrollment,
+      },
+    });
+
+    return newEnrollment;
   }
 
   async markAllEnrollmentsAsCompleted(courseId: number, instructorId: number) {
@@ -152,6 +174,14 @@ export class InstructorService {
     );
 
     await Promise.all(updatePromises);
+
+    this.eventEmitter.emit(EventType.INSTRUCTOR_COMPLETED_COURSE, {
+      type: EventType.INSTRUCTOR_COMPLETED_COURSE,
+      userId: instructorId,
+      payload: {
+        course,
+      },
+    });
 
     return `Marked ${enrollments.length} enrollments as COMPLETED for course ${courseId}`;
   }

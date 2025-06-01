@@ -6,19 +6,33 @@ import {
 import { CreateCourseDto } from './dto/create-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { Role } from 'generated/prisma';
+import { EventType, Role } from 'generated/prisma';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class CourseService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
   async create(createCourseDto: CreateCourseDto, instructorId: number) {
-    return await this.prisma.course.create({
+    const course = await this.prisma.course.create({
       data: {
         ...createCourseDto,
         instructorId,
       },
     });
+
+    this.eventEmitter.emit(EventType.COURSE_CREATED, {
+      type: EventType.COURSE_CREATED,
+      userId: instructorId,
+      payload: {
+        course,
+      },
+    });
+
+    return course;
   }
 
   async findAll(paginationDto: PaginationDto, userId: number, userRole: Role) {
@@ -137,9 +151,18 @@ export class CourseService {
       );
     }
 
-    return await this.prisma.course.update({
+    const newCourse = await this.prisma.course.update({
       where: { id: courseId },
       data: updateCourseDto,
+    });
+
+    this.eventEmitter.emit(EventType.COURSE_UPDATED, {
+      type: EventType.COURSE_UPDATED,
+      userId: instructorId,
+      payload: {
+        oldCourse: existingCourse,
+        newCourse,
+      },
     });
   }
 
@@ -156,8 +179,16 @@ export class CourseService {
       );
     }
 
-    return await this.prisma.course.delete({
+    await this.prisma.course.delete({
       where: { id: courseId },
+    });
+
+    this.eventEmitter.emit(EventType.COURSE_DELETED, {
+      type: EventType.COURSE_DELETED,
+      userId: instructorId,
+      payload: {
+        existingCourse,
+      },
     });
   }
 }

@@ -1,8 +1,9 @@
 import { StudentService } from './student.service';
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req} from '@nestjs/common';
 import { RolesDecorator } from 'src/auth/roles.decorator';
 import { Role } from 'generated/prisma';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Request } from 'express';
 import {
   ApiOperation,
   ApiResponse,
@@ -26,8 +27,8 @@ export class StudentController {
     @ApiResponse({ status: 403, description: 'Forbidden' })
     @RolesDecorator(Role.STUDENT)
     @UseGuards(RolesGuard)
-    DropFromCourse(@Param('enrollementId') enrollementId: string) {
-      return this.studentService.dropFromCourse(enrollementId);
+    DropFromCourse(@Param('enrollementId') enrollementId: string,  @Req() req: Request) {
+      return this.studentService.dropFromCourse(enrollementId, req.user);
     }
     
     @Delete("/reject/:enrollmentId")
@@ -36,8 +37,8 @@ export class StudentController {
     @ApiResponse({ status: 403, description: 'Forbidden' })
     @RolesDecorator(Role.STUDENT)
     @UseGuards(RolesGuard)
-    RejectEnrollement(@Param('enrollmentId') enrollmentId: string) {
-      return this.studentService.RejectEnrollement(enrollmentId);
+    RejectEnrollement(@Param('enrollmentId') enrollmentId: string, @Req() req: Request) {
+      return this.studentService.RejectEnrollement(enrollmentId, req.user);
     }
 
     @Patch("/accept/:enrollmentId")
@@ -46,7 +47,7 @@ export class StudentController {
     @ApiResponse({ status: 403, description: 'Forbidden' })
     @RolesDecorator(Role.STUDENT)
     @UseGuards(RolesGuard)
-    AcceptEnrollement(@Param('enrollmentId') enrollmentId: string) {
-      return this.studentService.AcceptEnrollement(enrollmentId);
+    AcceptEnrollement(@Param('enrollmentId') enrollmentId: string, @Req() req: Request) {
+      return this.studentService.AcceptEnrollement(enrollmentId, req.user);
     }
 }

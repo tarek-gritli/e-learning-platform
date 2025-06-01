@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req} from '@nestjs/common';
+import { Request } from 'express';
 import { RolesDecorator } from 'src/auth/roles.decorator';
 import { Role } from 'generated/prisma';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -26,8 +27,9 @@ export class InstructorController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @RolesDecorator(Role.INSTRUCTOR)
   @UseGuards(RolesGuard)
-  inviteStudentToCourse(@Param('studentId') studentId: string, @Param('courseId') courseId: string) {
-    return this.InstructorService.inviteStudentToCourse(studentId, courseId);
+  inviteStudentToCourse(@Param('studentId') studentId: string, @Param('courseId') courseId: string, @Req() req: Request) {
+    const loggedUser = req.user;
+    return this.InstructorService.inviteStudentToCourse(studentId, courseId, loggedUser);
   }
 
   @Delete("/kick/:studentId/course/:courseId")
@@ -36,8 +38,9 @@ export class InstructorController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @RolesDecorator(Role.INSTRUCTOR)
   @UseGuards(RolesGuard)
-  KickStudentFromCourse(@Param('studentId') studentId: string, @Param('courseId') courseId: string) {
-    return this.InstructorService.kickStudentFromCourse(studentId, courseId);
+  KickStudentFromCourse(@Param('studentId') studentId: string, @Param('courseId') courseId: string, @Req() req: Request) {
+    const loggedUser = req.user;
+    return this.InstructorService.kickStudentFromCourse(studentId, courseId, loggedUser);
   }
   
   @Patch('/complete/course/:courseId')
@@ -46,7 +49,8 @@ export class InstructorController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @RolesDecorator(Role.INSTRUCTOR)
   @UseGuards(RolesGuard)
-  markAllCourseEnrollmentsAsCompleted(@Param('courseId') courseId: string) {
-  return this.InstructorService.markAllEnrollmentsAsCompleted(courseId);
+  markAllCourseEnrollmentsAsCompleted(@Param('courseId') courseId: string, @Req() req: Request) {
+    const loggedUser = req.user;
+    return this.InstructorService.markAllEnrollmentsAsCompleted(courseId, loggedUser);
   }
 }

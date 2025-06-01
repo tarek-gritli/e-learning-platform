@@ -5,31 +5,35 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CourseService } from 'src/course/course.service';
+import { EnrollmentStatus } from 'generated/prisma';
 
 @Injectable()
 export class InstructorService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly courseService: CourseService,
+  ) {}
 
   async inviteStudentToCourse(
-    studentId: string,
-    courseId: string,
-    loggedUser: any,
-  ): Promise<string> {
-    const studentIdNum = parseInt(studentId, 10);
-    const courseIdNum = parseInt(courseId, 10);
-
+    studentId: number,
+    courseId: number,
+    instructorId: number,
+  ) {
     // Validate student
-    const student = await this.prisma.user.findUnique({ where: { id: studentIdNum } });
+    const student = await this.prisma.user.findUnique({
+      where: { id: studentId },
+    });
     if (!student || student.role !== 'STUDENT') {
-      throw new NotFoundException('Student not found or invalid role');
+      throw new NotFoundException('Student not found');
     }
 
     // Validate course and check ownership
-    const course = await this.prisma.course.findUnique({ where: { id: courseIdNum } });
+    const course = await this.courseService.findById(courseId);
     if (!course) {
       throw new NotFoundException('Course not found');
     }
-    if (course.instructorId !== loggedUser.id) {
+    if (course.instructorId !== instructorId) {
       throw new ForbiddenException('You are not the instructor of this course');
     }
 
@@ -37,22 +41,27 @@ export class InstructorService {
     const existing = await this.prisma.enrollment.findUnique({
       where: {
         studentId_courseId: {
-          studentId: studentIdNum,
-          courseId: courseIdNum,
+          studentId,
+          courseId,
+        },
+        status: {
+          in: [EnrollmentStatus.ACTIVE, EnrollmentStatus.PENDING],
         },
       },
     });
 
     if (existing) {
-      throw new BadRequestException('Student already invited or enrolled in this course');
+      throw new BadRequestException(
+        'Student already invited or enrolled in this course',
+      );
     }
 
     // Create pending enrollment
     await this.prisma.enrollment.create({
       data: {
-        studentId: studentIdNum,
-        courseId: courseIdNum,
-        status: 'PENDING',
+        studentId,
+        courseId,
+        status: EnrollmentStatus.PENDING,
       },
     });
 
@@ -60,19 +69,15 @@ export class InstructorService {
   }
 
   async kickStudentFromCourse(
-    studentId: string,
-    courseId: string,
-    loggedUser: any,
-  ): Promise<string> {
-    const studentIdNum = parseInt(studentId, 10);
-    const courseIdNum = parseInt(courseId, 10);
-
-    // Validate course and check ownership
-    const course = await this.prisma.course.findUnique({ where: { id: courseIdNum } });
+    studentId: number,
+    courseId: number,
+    instructorId: number,
+  ) {
+    const course = await this.courseService.findById(courseId);
     if (!course) {
       throw new NotFoundException('Course not found');
     }
-    if (course.instructorId !== loggedUser.id) {
+    if (course.instructorId !== instructorId) {
       throw new ForbiddenException('You are not the instructor of this course');
     }
 
@@ -80,49 +85,49 @@ export class InstructorService {
     const enrollment = await this.prisma.enrollment.findUnique({
       where: {
         studentId_courseId: {
-          studentId: studentIdNum,
-          courseId: courseIdNum,
+          studentId,
+          courseId,
         },
+        status: EnrollmentStatus.ACTIVE,
       },
     });
 
     if (!enrollment) {
-      throw new NotFoundException('Enrollment not found for the given student and course.');
+      throw new NotFoundException(
+        'Enrollment not found for the given student and course.',
+      );
     }
 
     // Delete the enrollment
-    await this.prisma.enrollment.delete({
+    await this.prisma.enrollment.update({
       where: {
         studentId_courseId: {
-          studentId: studentIdNum,
-          courseId: courseIdNum,
+          studentId,
+          courseId,
         },
+      },
+      data: {
+        status: EnrollmentStatus.KICKED,
       },
     });
 
     return `Student ${studentId} has been kicked from course ${courseId}`;
   }
 
-  async markAllEnrollmentsAsCompleted(
-    courseId: string,
-    loggedUser: any,
-  ): Promise<string> {
-    const courseIdNum = parseInt(courseId, 10);
-
-    // Validate course and check ownership
-    const course = await this.prisma.course.findUnique({ where: { id: courseIdNum } });
+  async markAllEnrollmentsAsCompleted(courseId: number, instructorId: number) {
+    const course = await this.courseService.findById(courseId);
     if (!course) {
       throw new NotFoundException('Course not found');
     }
-    if (course.instructorId !== loggedUser.id) {
+    if (course.instructorId !== instructorId) {
       throw new ForbiddenException('You are not the instructor of this course');
     }
 
     // Find enrollments that are not yet completed
     const enrollments = await this.prisma.enrollment.findMany({
       where: {
-        courseId: courseIdNum,
-        status: { not: 'COMPLETED' },
+        courseId,
+        status: { not: EnrollmentStatus.COMPLETED },
       },
     });
 
@@ -140,7 +145,7 @@ export class InstructorService {
           },
         },
         data: {
-          status: 'COMPLETED',
+          status: EnrollmentStatus.COMPLETED,
           completedAt: new Date(),
         },
       }),

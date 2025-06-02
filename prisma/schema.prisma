@@ -55,6 +55,8 @@ model User {
   sentMessages     Message[]        @relation("MessageSender")
   receivedMessages Message[]        @relation("MessageReceiver")
   courseMessages   CourseMessage[]
+  Event            Event[]
+
   @@map("users")
 }
 
@@ -144,4 +146,27 @@ model CourseMessage {
   comments       Json      @default("[]") // Same here
 
   @@map("course_messages")
+}
+
+model Event {
+  id        Int       @id @default(autoincrement())
+  type      EventType
+  payload   Json
+  createdAt DateTime  @default(now())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("events")
+}
+
+enum EventType {
+  STUDENT_DROPPED_FROM_COURSE
+  STUDENT_ENROLLED_IN_COURSE
+  STUDENT_REJECTED_ENROLLMENT_FROM_COURSE
+  COURSE_CREATED
+  COURSE_UPDATED
+  COURSE_DELETED
+  INSTRUCTOR_INVITED_STUDENT
+  INSTRUCTOR_KICKED_STUDENT
+  INSTRUCTOR_COMPLETED_COURSE
 }

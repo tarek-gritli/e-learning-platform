@@ -1,9 +1,16 @@
 import { StudentService } from './student.service';
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req} from '@nestjs/common';
+import {
+  Controller,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { RolesDecorator } from 'src/auth/roles.decorator';
 import { Role } from 'generated/prisma';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Request } from 'express';
 import {
   ApiOperation,
   ApiResponse,
@@ -11,6 +18,7 @@ import {
   ApiCookieAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RequestWithUser } from 'src/common/types/auth.types';
 
 @ApiBearerAuth('access-token')
 @ApiCookieAuth('access-token')
@@ -21,33 +29,48 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}
 
-    @Delete("/drop/:enrollementId")
-    @ApiOperation({ summary: 'drop a course(student only)' })
-    @ApiResponse({ status: 201, description: 'Student dropped successfully' })
-    @ApiResponse({ status: 403, description: 'Forbidden' })
-    @RolesDecorator(Role.STUDENT)
-    @UseGuards(RolesGuard)
-    DropFromCourse(@Param('enrollementId') enrollementId: string,  @Req() req: Request) {
-      return this.studentService.dropFromCourse(enrollementId, req.user);
-    }
-    
-    @Delete("/reject/:enrollmentId")
-    @ApiOperation({ summary: 'Reject enrollement in a course(student only)' })
-    @ApiResponse({ status: 201, description: 'Enrollement rejected successfully' })
-    @ApiResponse({ status: 403, description: 'Forbidden' })
-    @RolesDecorator(Role.STUDENT)
-    @UseGuards(RolesGuard)
-    RejectEnrollement(@Param('enrollmentId') enrollmentId: string, @Req() req: Request) {
-      return this.studentService.RejectEnrollement(enrollmentId, req.user);
-    }
+  @Patch('/drop/:courseId')
+  @ApiOperation({ summary: 'drop from a course(student only)' })
+  @ApiResponse({ status: 200, description: 'Student dropped successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @RolesDecorator(Role.STUDENT)
+  @UseGuards(RolesGuard)
+  dropFromCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.studentService.dropFromCourse(courseId, req.user.id);
+  }
 
-    @Patch("/accept/:enrollmentId")
-    @ApiOperation({ summary: 'accept enrollement in a course(student only)' })
-    @ApiResponse({ status: 201, description: 'Enrollement accepted successfully' })
-    @ApiResponse({ status: 403, description: 'Forbidden' })
-    @RolesDecorator(Role.STUDENT)
-    @UseGuards(RolesGuard)
-    AcceptEnrollement(@Param('enrollmentId') enrollmentId: string, @Req() req: Request) {
-      return this.studentService.AcceptEnrollement(enrollmentId, req.user);
-    }
+  @Delete('/reject/:courseId')
+  @ApiOperation({ summary: 'Reject enrollment in a course(student only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Enrollment rejected successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @RolesDecorator(Role.STUDENT)
+  @UseGuards(RolesGuard)
+  rejectEnrollment(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.studentService.rejectEnrollment(courseId, req.user.id);
+  }
+
+  @Patch('/accept/:courseId')
+  @ApiOperation({ summary: 'accept enrollment in a course(student only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Enrollment accepted successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @RolesDecorator(Role.STUDENT)
+  @UseGuards(RolesGuard)
+  acceptEnrollment(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.studentService.acceptEnrollment(courseId, req.user.id);
+  }
 }

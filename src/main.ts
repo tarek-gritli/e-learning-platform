@@ -19,6 +19,11 @@ async function bootstrap() {
       },
     }),
   );
+  
+  app.enableCors({
+  origin: '*',
+  methods: ['GET', 'POST'],
+  });
 
   const config = new DocumentBuilder()
     .setTitle('E-Learning Platform API')

@@ -1,13 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CourseService } from 'src/course/course.service';
-import { EnrollmentStatus } from 'generated/prisma';
+import { EnrollmentStatus, EventType } from 'generated/prisma';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class StudentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly courseService: CourseService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async rejectEnrollment(courseId: number, studentId: number) {
@@ -31,6 +33,15 @@ export class StudentService {
       where: { id: enrollment.id },
     });
 
+    this.eventEmitter.emit(EventType.STUDENT_REJECTED_ENROLLMENT_FROM_COURSE, {
+      type: EventType.STUDENT_REJECTED_ENROLLMENT_FROM_COURSE,
+      userId: studentId,
+      payload: {
+        course,
+        enrollmentRequest: enrollment,
+      },
+    });
+
     return `Enrollment ${enrollment.id} rejected successfully`;
   }
 
@@ -52,10 +63,20 @@ export class StudentService {
       throw new NotFoundException('Enrollment not found');
     }
 
-    await this.prisma.enrollment.update({
+    const updated = await this.prisma.enrollment.update({
       where: { id: enrollment.id },
       data: {
         status: EnrollmentStatus.ACTIVE,
+      },
+    });
+
+    this.eventEmitter.emit(EventType.STUDENT_ENROLLED_IN_COURSE, {
+      type: EventType.STUDENT_ENROLLED_IN_COURSE,
+      userId: studentId,
+      payload: {
+        course,
+        oldEnrollment: enrollment,
+        newEnrollment: updated,
       },
     });
 
@@ -82,10 +103,20 @@ export class StudentService {
       );
     }
 
-    await this.prisma.enrollment.update({
+    const updated = await this.prisma.enrollment.update({
       where: { id: enrollment.id },
       data: {
         status: EnrollmentStatus.DROPPED,
+      },
+    });
+
+    this.eventEmitter.emit(EventType.STUDENT_DROPPED_FROM_COURSE, {
+      type: EventType.STUDENT_DROPPED_FROM_COURSE,
+      userId: studentId,
+      payload: {
+        course,
+        oldEnrollment: enrollment,
+        newEnrollment: updated,
       },
     });
 

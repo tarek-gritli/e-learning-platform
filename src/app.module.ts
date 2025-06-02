@@ -8,8 +8,9 @@ import { AuthModule } from './auth/auth.module';
 import { CourseModule } from './course/course.module';
 import { InstructorModule } from './instructor/instructor.module';
 import { StudentModule } from './student/student.module';
-import {ChatModule} from './chat/chat.module';
+import { ChatModule } from './chat/chat.module';
 import { EventModule } from './event/event.module';
+import { CourseMaterialsModule } from './course/course-materials.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EventModule } from './event/event.module';
     StudentModule,
     ChatModule,
     EventModule,
+    CourseMaterialsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

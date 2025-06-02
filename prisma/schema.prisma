@@ -50,10 +50,10 @@ model User {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  createdCourses   Course[]     @relation("InstructorCourses")
+  createdCourses   Course[]        @relation("InstructorCourses")
   enrollments      Enrollment[]
-  sentMessages     Message[]        @relation("MessageSender")
-  receivedMessages Message[]        @relation("MessageReceiver")
+  sentMessages     Message[]       @relation("MessageSender")
+  receivedMessages Message[]       @relation("MessageReceiver")
   courseMessages   CourseMessage[]
   Event            Event[]
 
@@ -68,7 +68,7 @@ model Course {
   updatedAt   DateTime @updatedAt
 
   instructorId Int
-  instructor   User             @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
+  instructor   User                @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
   materials    CourseMaterial[]
   enrollments  Enrollment[]
   conversation CourseConversation?
@@ -80,7 +80,7 @@ model CourseMaterial {
   id        Int          @id @default(autoincrement())
   title     String
   type      MaterialType
-  fileUrl   String?
+  fileUrl   String
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
@@ -120,30 +120,30 @@ model Message {
 }
 
 model CourseConversation {
-  id        Int             @id @default(autoincrement())
-  courseId  Int             @unique
-  course    Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  messages  CourseMessage[]
+  id       Int             @id @default(autoincrement())
+  courseId Int             @unique
+  course   Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  messages CourseMessage[]
 
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("course_conversations")
 }
 
 model CourseMessage {
-  id             Int       @id @default(autoincrement())
-  text           String
-  timestamp      DateTime  @default(now())
+  id        Int      @id @default(autoincrement())
+  text      String
+  timestamp DateTime @default(now())
 
-  userId         Int
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   conversationId Int
   conversation   CourseConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  reactions      Json      @default("{}") // Can be adapted to a separate table if you want fine-grained control
-  comments       Json      @default("[]") // Same here
+  reactions Json @default("{}") // Can be adapted to a separate table if you want fine-grained control
+  comments  Json @default("[]") // Same here
 
   @@map("course_messages")
 }

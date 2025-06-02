@@ -1,0 +1,42 @@
+type Query {
+  course(id: Int!): Course
+  me: User
+}
+
+type User {
+  id: Int!
+  firstName: String!
+  lastName: String!
+  email: String!
+  username: String!
+  createdCourses: [Course!]!
+}
+
+type Course {
+  id: Int!
+  title: String!
+  description: String
+  materials: [CourseMaterial!]!
+  students: [User!]!
+  enrollments(status: EnrollmentStatus): [Enrollment!]!
+}
+
+type CourseMaterial {
+  id: Int!
+  title: String!
+  fileUrl: String
+}
+
+type Enrollment {
+  id: Int!
+  status: EnrollmentStatus!
+  student: User!
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+  KICKED
+  PENDING
+}

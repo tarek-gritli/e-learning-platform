@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CourseService } from 'src/course/course.service';
 import { EnrollmentStatus, EventType } from 'generated/prisma';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { create } from 'domain';
 
 @Injectable()
 export class InstructorService {
@@ -75,6 +76,7 @@ export class InstructorService {
         course,
         student,
       },
+      createdAt: new Date(),
     });
 
     return enrollment;
@@ -131,6 +133,7 @@ export class InstructorService {
         oldEnrollment: enrollment,
         newEnrollment,
       },
+      createdAt: new Date(),
     });
 
     return newEnrollment;
@@ -181,6 +184,7 @@ export class InstructorService {
       payload: {
         course,
       },
+      createdAt: new Date(),
     });
 
     return `Marked ${enrollments.length} enrollments as COMPLETED for course ${courseId}`;

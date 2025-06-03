@@ -30,6 +30,7 @@ export class CourseService {
       payload: {
         course,
       },
+      createdAt: new Date(),
     });
 
     return course;
@@ -163,6 +164,7 @@ export class CourseService {
         oldCourse: existingCourse,
         newCourse,
       },
+      createdAt: new Date(),
     });
   }
 
@@ -189,6 +191,7 @@ export class CourseService {
       payload: {
         existingCourse,
       },
+      createdAt: new Date(),
     });
   }
 }

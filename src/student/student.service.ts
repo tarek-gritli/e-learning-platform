@@ -40,6 +40,7 @@ export class StudentService {
         course,
         enrollmentRequest: enrollment,
       },
+      createdAt: new Date(),
     });
 
     return `Enrollment ${enrollment.id} rejected successfully`;
@@ -78,6 +79,7 @@ export class StudentService {
         oldEnrollment: enrollment,
         newEnrollment: updated,
       },
+      createdAt: new Date(),
     });
 
     return `Enrollment ${enrollment.id} accepted successfully`;
@@ -118,6 +120,7 @@ export class StudentService {
         oldEnrollment: enrollment,
         newEnrollment: updated,
       },
+      createdAt: new Date(),
     });
 
     return `Successfully dropped enrollment ${enrollment.id}`;

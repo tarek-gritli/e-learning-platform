@@ -2,14 +2,19 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { Injectable, MessageEvent } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { CreateEventDto } from './dto/create-event.dto';
-import { EventType } from 'generated/prisma';
-import { fromEvent, map, merge, Observable } from 'rxjs';
+import { EventType, Role } from 'generated/prisma';
+import { filter, fromEvent, map, merge, Observable } from 'rxjs';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from 'src/common/types/auth.types';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class EventService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   @OnEvent(EventType.COURSE_CREATED)
@@ -31,14 +36,27 @@ export class EventService {
     });
   }
 
-  stream(): Observable<MessageEvent> {
+  stream(token: string): Observable<MessageEvent> {
     console.log('SSE connection established');
+    console.log('Token: ', token);
+
+    if (!token) {
+      throw new Error('Token is required for SSE connection');
+    }
+
+    const decoded: JwtPayload = this.jwtService.verify(token, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+    });
+
     const eventTypes = Object.values(EventType);
     const eventStreams = eventTypes.map((type) =>
       fromEvent(this.eventEmitter, type),
     );
 
     return merge(...eventStreams).pipe(
+      filter(() => {
+        return decoded.role === Role.ADMIN;
+      }),
       map((event) => {
         console.log('Streaming event: ', event);
         return {

@@ -19,10 +19,10 @@ async function bootstrap() {
       },
     }),
   );
-  
+
   app.enableCors({
-  origin: '*',
-  methods: ['GET', 'POST'],
+    origin: 'http://localhost:8080',
+    credentials: true,
   });
 
   const config = new DocumentBuilder()
